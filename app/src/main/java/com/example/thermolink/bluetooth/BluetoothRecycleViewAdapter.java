@@ -1,5 +1,6 @@
 package com.example.thermolink.bluetooth;
 
+import android.bluetooth.BluetoothDevice;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,10 +15,10 @@ import java.util.List;
 
 public class BluetoothRecycleViewAdapter extends RecyclerView.Adapter<BluetoothRecycleViewAdapter.BluetoothViewHolder> {
 
-    private List<String> items; // список даних
+    private List<BluetoothDevice> items; // список даних
 
     // Конструктор
-    public BluetoothRecycleViewAdapter(List<String> items) {
+    public BluetoothRecycleViewAdapter(List<BluetoothDevice> items) {
         this.items = items;
     }
 
@@ -41,7 +42,7 @@ public class BluetoothRecycleViewAdapter extends RecyclerView.Adapter<BluetoothR
     public void onBindViewHolder(@NonNull BluetoothViewHolder holder, int position) {
         // Встановлюємо текст з нашого списку
 
-        holder.textView.setText(items.get(position));
+        holder.textView.setText(items.get(position).getName());
     }
 
     @Override
@@ -49,3 +50,4 @@ public class BluetoothRecycleViewAdapter extends RecyclerView.Adapter<BluetoothR
         return items.size();
     }
 }
+

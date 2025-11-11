@@ -1,5 +1,6 @@
 package com.example.thermolink;
 
+import android.bluetooth.BluetoothDevice;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
@@ -46,9 +47,9 @@ BluetoothRecycleViewAdapter adapter;
 
         }
 
-        MyBluetoothHelper bluetoothHelper = new MyBluetoothHelper(getContext());
+        MyBluetoothHelper bluetoothHelper = MyBluetoothHelper.getInstance(getContext());
 
-        ArrayList<String> deviceList = new ArrayList<>(bluetoothHelper.getPairedDevices());
+        ArrayList<BluetoothDevice> deviceList = new ArrayList<>(bluetoothHelper.getPairedDevices());
 
         adapter = new BluetoothRecycleViewAdapter(deviceList);
     }
