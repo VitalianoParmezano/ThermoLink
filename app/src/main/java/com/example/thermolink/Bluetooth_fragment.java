@@ -16,6 +16,7 @@ import com.example.thermolink.bluetooth.BluetoothRecycleViewAdapter;
 import com.example.thermolink.bluetooth.MyBluetoothHelper;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 public class Bluetooth_fragment extends Fragment {
 RecyclerView bluetoothRecycleView;
 BluetoothRecycleViewAdapter adapter;
+
 
     public Bluetooth_fragment() {
         // Required empty public constructor
@@ -48,8 +50,11 @@ BluetoothRecycleViewAdapter adapter;
         }
 
         MyBluetoothHelper bluetoothHelper = MyBluetoothHelper.getInstance(getContext());
+        bluetoothHelper.setConnectionListener((device, isConnected) -> {
+            adapter.notifyDataSetChanged();
+        });
 
-        ArrayList<BluetoothDevice> deviceList = new ArrayList<>(bluetoothHelper.getPairedDevices());
+        List<BluetoothDevice> deviceList = bluetoothHelper.getVisibleDevices();
 
         adapter = new BluetoothRecycleViewAdapter(deviceList);
     }
@@ -66,6 +71,7 @@ BluetoothRecycleViewAdapter adapter;
         bluetoothRecycleView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         bluetoothRecycleView.setAdapter(adapter);
+
 
         return view;
     }

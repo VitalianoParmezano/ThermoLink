@@ -129,6 +129,7 @@ public class MyBluetoothHelper {
 
         // Запускаємо сканування
         if (bluetoothAdapter != null && !bluetoothAdapter.isDiscovering()) {
+            visibleDevices.clear();
             return bluetoothAdapter.startDiscovery();
         }
         return false;
@@ -168,7 +169,7 @@ public class MyBluetoothHelper {
 
             if (BluetoothDevice.ACTION_FOUND.equals(action)){
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                if (device != null && !visibleDevices.contains(device)) {
+                if (device != null && !visibleDevices.contains(device)&& device.getName() != null) {
                     visibleDevices.add(device);
                     Log.d(TAG, "Broadcast: found " + device.getName());
                     if (connectionListener != null) {
@@ -178,9 +179,11 @@ public class MyBluetoothHelper {
                 }
             }
 
+
             if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)){
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if (device!= null){
+
                     visibleDevices.remove(device);
 
                     if (connectionListener != null) {
@@ -190,9 +193,8 @@ public class MyBluetoothHelper {
             }
 
             if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
-                Log.d(TAG, "Broadcast: scanning finished \nUnregistering broadcast...");
+                Log.d(TAG, "Broadcast: scanning finished\n"+ MyBluetoothHelper.getInstance(context).getVisibleDevices() + "\nUnregistering broadcast...");
                 context.unregisterReceiver(bluetoothReceiver);
-
             }
 
             if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)){
