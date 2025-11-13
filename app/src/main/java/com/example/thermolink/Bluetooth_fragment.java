@@ -1,8 +1,10 @@
 package com.example.thermolink;
 
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,12 +20,8 @@ import com.example.thermolink.bluetooth.MyBluetoothHelper;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link Bluetooth_fragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class Bluetooth_fragment extends Fragment {
+    private OnDeviceClickListener onDeviceClickListener;
 RecyclerView bluetoothRecycleView;
 BluetoothRecycleViewAdapter adapter;
 
@@ -32,13 +30,28 @@ BluetoothRecycleViewAdapter adapter;
         // Required empty public constructor
     }
 
-    // TODO: Rename and change types and number of parameters
-    public static Bluetooth_fragment newInstance() {
-        Bluetooth_fragment fragment = new Bluetooth_fragment();
-        Bundle args = new Bundle();
+    //    public static Bluetooth_fragment newInstance(OnDeviceClickListener listener) {
+    //        Bluetooth_fragment fragment = new Bluetooth_fragment();
+    //        Bundle args = new Bundle();
+    //        args.
+    //        fragment.setArguments(args);
+    //        return fragment;
+    //    }
 
-        fragment.setArguments(args);
-        return fragment;
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        if (context instanceof OnDeviceClickListener){
+            onDeviceClickListener = (OnDeviceClickListener) context;
+        } else {
+            throw new RuntimeException(context + "must implement onDeviceClickListener");
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        onDeviceClickListener = null;
     }
 
     @Override
@@ -56,7 +69,7 @@ BluetoothRecycleViewAdapter adapter;
 
         List<BluetoothDevice> deviceList = bluetoothHelper.getVisibleDevices();
 
-        adapter = new BluetoothRecycleViewAdapter(deviceList);
+        adapter = new BluetoothRecycleViewAdapter(deviceList, onDeviceClickListener, getContext());
     }
 
     @Override
@@ -75,4 +88,9 @@ BluetoothRecycleViewAdapter adapter;
 
         return view;
     }
+
+    public interface OnDeviceClickListener{
+        void onDeviceClick(BluetoothDevice device);
+    }
+
 }

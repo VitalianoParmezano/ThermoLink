@@ -1,37 +1,34 @@
 package com.example.thermolink;
 
 import android.Manifest;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.example.thermolink.bluetooth.MyBluetoothHelper;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements Bluetooth_fragment.OnDeviceClickListener {
     private MyBluetoothHelper bluetoothHelper;
     TextView debug_tv;
     private List<String> deviceNames = new ArrayList<>();
     ImageButton update_device_list_btn;
     FrameLayout frameLayout;
+    private BottomNavigationView bottomNavigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,15 +46,16 @@ public class MainActivity extends AppCompatActivity {
                 android.Manifest.permission.BLUETOOTH_CONNECT,
                 android.Manifest.permission.ACCESS_FINE_LOCATION,
                 android.Manifest.permission.BLUETOOTH_ADVERTISE,
-                Manifest.permission.ACCESS_FINE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.BLUETOOTH_ADMIN
 
         }, 1);
 
         bluetoothHelper = MyBluetoothHelper.getInstance(this);
 
+        bottomNavigationView = findViewById(R.id.bottom_navigation);
         frameLayout = findViewById(R.id.fragment_container);
         update_device_list_btn = findViewById(R.id.update_device_lists);
-        debug_tv = findViewById(R.id.debug_tv);
 
         update_device_list_btn.setOnClickListener(v -> {
             bluetoothHelper.startDiscovery();
@@ -66,13 +64,31 @@ public class MainActivity extends AppCompatActivity {
             if (test.isEmpty()) {
                 return;
             }
-            debug_tv.setText(test.get(0).getName());
         });
 
         if (savedInstanceState == null) {
             addInitialFragment();
         }
 
+
+        bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
+            Fragment selectedFragment = null;
+
+            int itemId = item.getItemId();
+            if (itemId == R.id.nav_home) {
+                selectedFragment = new Bluetooth_fragment();
+            } else if (itemId == R.id.nav_info) {
+                selectedFragment = new Device_converstation();
+            }
+
+            if (selectedFragment != null) {
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, selectedFragment)
+                        .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                        .commit();
+            }
+            return true;
+        });
     }
 
     private void addInitialFragment() {
@@ -84,5 +100,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    @Override
+    public void onDeviceClick(BluetoothDevice device) {
+        Fragment selectedFragment = Device_converstation.newInstance(device);
 
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, selectedFragment)
+                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+                .commit();
+    }
 }
