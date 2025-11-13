@@ -17,7 +17,7 @@ import com.example.thermolink.bluetooth.MyBluetoothHelper;
 public class Device_converstation extends Fragment {
     MyBluetoothHelper bluetoothHelper;
     BluetoothDevice selectedDevice;
-    Button btn_debug;
+    Button btn_debug, btn_turOnDiode;
 
     public Device_converstation() {}
 
@@ -37,7 +37,6 @@ public class Device_converstation extends Fragment {
         if (getArguments() != null) {
             selectedDevice = getArguments().getParcelable("selected_device");
         }
-
         bluetoothHelper = MyBluetoothHelper.getInstance(getContext());
 
     }
@@ -51,6 +50,11 @@ public class Device_converstation extends Fragment {
 
         btn_debug.setOnClickListener(v -> {
             bluetoothHelper.connect(selectedDevice);
+        });
+
+        btn_turOnDiode = view.findViewById(R.id.btn_turn_on_diode);
+        btn_turOnDiode.setOnClickListener(v -> {
+            bluetoothHelper.sendCommand("wow");
         });
 
         return view;

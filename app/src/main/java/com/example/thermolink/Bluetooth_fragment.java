@@ -63,8 +63,21 @@ BluetoothRecycleViewAdapter adapter;
         }
 
         MyBluetoothHelper bluetoothHelper = MyBluetoothHelper.getInstance(getContext());
-        bluetoothHelper.setConnectionListener((device, isConnected) -> {
-            adapter.notifyDataSetChanged();
+        bluetoothHelper.setConnectionListener(new MyBluetoothHelper.ConnectionListener() {
+            @Override
+            public void onDeviceFound(BluetoothDevice device) {
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onDiscoveryStarted() {
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onDiscoveryFinished(int devicesCount) {
+
+            }
         });
 
         List<BluetoothDevice> deviceList = bluetoothHelper.getVisibleDevices();
