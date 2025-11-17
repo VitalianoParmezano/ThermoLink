@@ -3,16 +3,20 @@ package com.example.thermolink;
 import android.Manifest;
 import android.bluetooth.BluetoothDevice;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toolbar;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.graphics.Insets;
+import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -24,10 +28,11 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements Bluetooth_fragment.OnDeviceClickListener {
     private MyBluetoothHelper bluetoothHelper;
-    TextView debug_tv;
+    private TextView debug_tv;
     private List<String> deviceNames = new ArrayList<>();
-    ImageButton update_device_list_btn;
-    FrameLayout frameLayout;
+    private ImageButton update_device_list_btn;
+    private FrameLayout frameLayout;
+    private Toolbar toolbar;
     private BottomNavigationView bottomNavigationView;
 
     @Override
@@ -53,6 +58,8 @@ public class MainActivity extends AppCompatActivity implements Bluetooth_fragmen
 
         bluetoothHelper = MyBluetoothHelper.getInstance(this);
 
+        //drawerLayout = findViewById(R.id.main);
+        toolbar = findViewById(R.id.toolbar);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         frameLayout = findViewById(R.id.fragment_container);
         update_device_list_btn = findViewById(R.id.update_device_lists);
@@ -69,6 +76,7 @@ public class MainActivity extends AppCompatActivity implements Bluetooth_fragmen
         if (savedInstanceState == null) {
             addInitialFragment();
         }
+
 
 
         bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
@@ -108,5 +116,9 @@ public class MainActivity extends AppCompatActivity implements Bluetooth_fragmen
                 .replace(R.id.fragment_container, selectedFragment)
                 .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .commit();
+
+        bluetoothHelper.connect(device);
+
+        bottomNavigationView.setSelectedItemId(R.id.nav_info);
     }
 }

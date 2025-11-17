@@ -3,7 +3,7 @@
     android:shape="rectangle">
 
     <!-- Колір фону -->
-    <solid android:color="#FF6200EE"/>
+    <solid android:color="#c0c0c0"/>
 
     <!-- Заокруглення кутів -->
     <corners android:radius="16dp"/>
@@ -11,6 +11,6 @@
     <!-- За бажанням можна додати тінь через padding або stroke -->
     <stroke
         android:width="2dp"
-        android:color="#FF3700B3"/>
+        android:color="#505050"/>
 
 </shape>

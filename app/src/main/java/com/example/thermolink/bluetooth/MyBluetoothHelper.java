@@ -16,13 +16,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 public class MyBluetoothHelper {
@@ -31,6 +32,7 @@ public class MyBluetoothHelper {
 
     private BluetoothAdapter bluetoothAdapter;
     private Context context;
+    private SearchListener searchListener;
     private ConnectionListener connectionListener;
     private List<BluetoothDevice> visibleDevices = new ArrayList<>();
 
@@ -39,6 +41,10 @@ public class MyBluetoothHelper {
     private BluetoothGattCharacteristic dataCharacteristic;
     private boolean isConnected = false;
     private boolean isReadyToSend = false;
+    // Мейн лупер
+    private final android.os.Handler mainHandler = new android.os.Handler(
+            android.os.Looper.getMainLooper()
+    );
 
     // UUID для HM модулів
     private static final UUID HM_SERVICE_UUID = UUID.fromString("0000FFE0-0000-1000-8000-00805F9B34FB");
@@ -60,9 +66,12 @@ public class MyBluetoothHelper {
     // ----------------------------
     // Публічні методи
     // ----------------------------
-
-    public void setConnectionListener(ConnectionListener connectionListener) {
+    public void setConnectionListener (ConnectionListener connectionListener){
         this.connectionListener = connectionListener;
+    }
+
+    public void setSearchingListener(SearchListener searchListener) {
+        this.searchListener = searchListener;
     }
 
     public boolean isBluetoothSupported() {
@@ -82,7 +91,7 @@ public class MyBluetoothHelper {
 
     @SuppressLint("MissingPermission")
     public void connect(BluetoothDevice device) {
-        Log.d(TAG, "Підключаємося до: " + device.getName());
+        Log.d(TAG, "Підключення до: " + device.getName());
 
         if (bluetoothGatt != null) {
             bluetoothGatt.close();
@@ -102,9 +111,7 @@ public class MyBluetoothHelper {
 
     public void sendCommand(String command) {
         if (!isReadyToSend || dataCharacteristic == null || bluetoothGatt == null) {
-            Log.e(TAG, "Не готово до відправки. Готовність: " + isReadyToSend +
-                    ", Характеристика: " + (dataCharacteristic != null) +
-                    ", GATT: " + (bluetoothGatt != null));
+            Log.e(TAG, "Не готово до відправки");
             return;
         }
 
@@ -115,9 +122,9 @@ public class MyBluetoothHelper {
         boolean success = bluetoothGatt.writeCharacteristic(dataCharacteristic);
 
         if (success) {
-            Log.d(TAG, "✅ Команда відправлена: " + command);
+            Log.d(TAG, "Команда відправлена: " + command);
         } else {
-            Log.e(TAG, "❌ Помилка відправки команди: " + command);
+            Log.e(TAG, "Помилка відправки команди: " + command);
             attemptRecovery();
         }
     }
@@ -181,24 +188,28 @@ public class MyBluetoothHelper {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                Log.d(TAG, "✅ Підключено до BLE пристрою");
+                Log.d(TAG, "Підключено до BLE пристрою" + status + newState);
                 isConnected = true;
 
                 @SuppressLint("MissingPermission")
                 boolean discoveryStarted = gatt.discoverServices();
                 Log.d(TAG, "Початок пошуку сервісів: " + discoveryStarted);
 
+
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                Log.d(TAG, "❌ Відключено від BLE пристрою");
+                Log.d(TAG, "Відключено від BLE пристрою");
                 isConnected = false;
                 isReadyToSend = false;
                 dataCharacteristic = null;
+                connectionListener.onConnection();
 
                 if (bluetoothGatt != null) {
                     Log.d(TAG, "Спроба перепідключення...");
                     bluetoothGatt.connect();
                 }
             }
+            mainHandler.post(()-> connectionListener.onConnection());
+
         }
 
         @Override
@@ -214,17 +225,17 @@ public class MyBluetoothHelper {
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                Log.d(TAG, "✅ Дескриптор успішно налаштовано");
+                Log.d(TAG, "Готово до обміну даними");
                 isReadyToSend = true;
-
-                Log.d(TAG, "🎉 Готово до роботи! Можна відправляти команди!");
 
                 new android.os.Handler().postDelayed(() -> {
                     sendCommand("hello");
                 }, 1000);
 
+                mainHandler.post(()-> connectionListener.onConnection());
+
             } else {
-                Log.e(TAG, "❌ Помилка налаштування дескриптора: " + status);
+                Log.e(TAG, "Помилка налаштування дескриптора: " + status);
             }
         }
 
@@ -241,8 +252,8 @@ public class MyBluetoothHelper {
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             byte[] data = characteristic.getValue();
             String message = new String(data).trim();
-            Log.d(TAG, "📨 Отримано від модуля: " + message);
-            handleIncomingMessage(message);
+            Log.d(TAG, "Отримано від модуля: " + message);
+            connectionListener.onMessageFromDevice(message);
         }
 
         @Override
@@ -300,19 +311,7 @@ public class MyBluetoothHelper {
         }
     }
 
-    private void handleIncomingMessage(String message) {
-        switch (message) {
-            case "OK":
-                Log.d(TAG, "Модуль підтвердив команду");
-                break;
-            case "ERROR":
-                Log.e(TAG, "Модуль повідомив про помилку");
-                break;
-            default:
-                Log.d(TAG, "Повідомлення від модуля: " + message);
-                break;
-        }
-    }
+
 
     // ----------------------------
     // Сканування пристроїв
@@ -321,7 +320,7 @@ public class MyBluetoothHelper {
     @SuppressLint("MissingPermission")
     public boolean startDiscovery() {
         if (!hasBluetoothScanPermission()) {
-            Log.e(TAG, "❌ Немає дозволу на сканування");
+            Log.e(TAG, "Немає дозволу на сканування");
             return false;
         }
 
@@ -358,7 +357,7 @@ public class MyBluetoothHelper {
     }
 
     public List<BluetoothDevice> getVisibleDevices() {
-        return visibleDevices;
+        return Collections.unmodifiableList(visibleDevices);
     }
 
     public void clearVisibleDevices() {
@@ -404,8 +403,8 @@ public class MyBluetoothHelper {
                     visibleDevices.add(device);
                     Log.d(TAG, "📡 Знайдено: " + device.getName() + " (" + device.getAddress() + ")");
 
-                    if (connectionListener != null) {
-                        connectionListener.onDeviceFound(device);
+                    if (searchListener != null) {
+                        searchListener.onDeviceFound(device);
                     }
                 }
             }
@@ -414,16 +413,16 @@ public class MyBluetoothHelper {
                 Log.d(TAG, "🔍 Сканування завершено. Знайдено пристроїв: " + visibleDevices.size());
                 context.unregisterReceiver(this);
 
-                if (connectionListener != null) {
-                    connectionListener.onDiscoveryFinished(visibleDevices.size());
+                if (searchListener != null) {
+                    searchListener.onDiscoveryFinished(visibleDevices.size());
                 }
             }
 
             if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
                 Log.d(TAG, "🔍 Сканування розпочато");
 
-                if (connectionListener != null) {
-                    connectionListener.onDiscoveryStarted();
+                if (searchListener != null) {
+                    searchListener.onDiscoveryStarted();
                 }
             }
         }
@@ -433,9 +432,14 @@ public class MyBluetoothHelper {
     // Інтерфейси
     // ----------------------------
 
-    public interface ConnectionListener {
+    public interface SearchListener {
         void onDeviceFound(BluetoothDevice device);
         void onDiscoveryStarted();
         void onDiscoveryFinished(int devicesCount);
+    }
+
+    public interface ConnectionListener{
+        void onConnection();
+        void onMessageFromDevice(String s);
     }
 }

@@ -9,7 +9,6 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,7 +16,6 @@ import android.view.ViewGroup;
 import com.example.thermolink.bluetooth.BluetoothRecycleViewAdapter;
 import com.example.thermolink.bluetooth.MyBluetoothHelper;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Bluetooth_fragment extends Fragment {
@@ -63,7 +61,7 @@ BluetoothRecycleViewAdapter adapter;
         }
 
         MyBluetoothHelper bluetoothHelper = MyBluetoothHelper.getInstance(getContext());
-        bluetoothHelper.setConnectionListener(new MyBluetoothHelper.ConnectionListener() {
+        bluetoothHelper.setSearchingListener(new MyBluetoothHelper.SearchListener() {
             @Override
             public void onDeviceFound(BluetoothDevice device) {
                 adapter.notifyDataSetChanged();

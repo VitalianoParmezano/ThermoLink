@@ -51,7 +51,6 @@ public class BluetoothRecycleViewAdapter extends RecyclerView.Adapter<BluetoothR
         // Встановлюємо текст з нашого списку
         holder.textView.setText(items.get(position).getName());
         holder.itemView.setOnClickListener(v -> {
-            Log.d(TAG, "item click: " + items.get(position).getName());
             onDeviceClickListener.onDeviceClick(items.get(position));
         });
     }
