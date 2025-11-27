@@ -9,3 +9,4 @@ STM32F407VGTX_RAM.ld
 *.swo
 *.swp
 Debug/
+ThermoLink Debug.launch

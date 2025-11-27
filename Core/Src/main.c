@@ -18,12 +18,14 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "i2c.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,8 +35,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define LED_PIN GPIO_PIN_14
+#define LED_PIN GPIO_PIN_13
 #define LED_PORT GPIOD
+
+#define MLX_ADDR 0x5A << 1  // I2C адреса MLX90614
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -53,16 +57,21 @@ char bt_input_buffer[128];      // Complete message buffer
 uint16_t bt_input_index = 0;    // Current position in input buffer
 uint8_t bt_message_ready = 0;   // Flag indicating complete message received
 
-
+// Pirometr
+uint32_t last_temp_measurement = 0;
+#define TEMP_MEASURE_INTERVAL 1000  // 1 секунда
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 void BT_Init(void);                           // Initialize Bluetooth communication
-void BT_Process(void);                        // Process received Bluetooth messages
 void BT_MessageHandler(char *message);        // Handle specific Bluetooth commands
 void BT_SendMessage(char *message);           // Send message via Bluetooth
+
+uint16_t MLX_Read_Register(uint8_t reg);
+float MLX_ReadTempAmbient(void);
+float MLX_ReadTempObject(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -76,10 +85,31 @@ void BT_SendMessage(char *message);           // Send message via Bluetooth
   */
 int main(void)
 {
+
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
   SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_UART4_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   BT_Init();
   /* USER CODE END 2 */
@@ -88,14 +118,33 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
+
 	    if (bt_message_ready!=0) {
 	    	BT_MessageHandler(bt_input_buffer);
 
-	    }
+	    	HAL_Delay(200);
 
-	    HAL_Delay(1);
+	        float ambient = MLX_ReadTempAmbient();
+	        float object = MLX_ReadTempObject();
+
+            int ambient_int = (int)ambient;
+            int object_int = (int)object;
+
+
+	        char temp_msg[64];
+            sprintf(temp_msg, "A: %dC, O: %dC",
+                   ambient_int,object_int);
+
+
+
+            BT_SendMessage(temp_msg);
+	    }
+    /* USER CODE END WHILE */
+
     /* USER CODE BEGIN 3 */
+
+
+
   }
   /* USER CODE END 3 */
 }
@@ -173,7 +222,6 @@ void BT_MessageHandler(char *message)
   memset(bt_input_buffer, 0, sizeof(bt_input_buffer));  // Clear buffer contents
 
 }
-/* USER CODE END 4 */
 
 // My system code
 void BT_Init(void)
@@ -189,21 +237,7 @@ void BT_Init(void)
   bt_input_index = 0;
   bt_message_ready = 0;
 }
-
-void BT_Process(void)
-{
-  // Check if a complete message has been received
-  if (bt_message_ready) {
-    // Process the received command
-    BT_MessageHandler(bt_input_buffer);
-
-    // Reset for next message
-    bt_message_ready = 0;           // Clear the message ready flag
-    bt_input_index = 0;             // Reset buffer position
-    memset(bt_input_buffer, 0, sizeof(bt_input_buffer));  // Clear buffer contents
-  }
-}
-
+// Переривання по Юарт
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   // Check if this interrupt came from our Bluetooth UART
@@ -242,6 +276,48 @@ void BT_SendMessage(char *message)
   // HAL_MAX_DELAY means wait forever if needed
   HAL_UART_Transmit(&huart4, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 }
+
+/*
+Пірометр код нижче
+*/
+
+float MLX_ReadTempAmbient(void)
+{
+    uint16_t raw = MLX_Read_Register(0x06); // 0x06 - ambient temperature
+    if (raw == 0) return 0;
+    return (raw * 0.02f) - 273.15f;
+}
+
+float MLX_ReadTempObject(void)
+{
+    uint16_t raw = MLX_Read_Register(0x07); // 0x07 - object temperature (виправити з 0x06 на 0x07!)
+    if (raw == 0) return 0;
+    return (raw * 0.02f) - 273.15f;
+}
+
+uint16_t MLX_Read_Register(uint8_t reg)
+{
+    uint8_t data[3];
+    HAL_StatusTypeDef status;
+
+    // Використовуємо HAL_I2C_Mem_Read для автоматичного repeated start
+    status = HAL_I2C_Mem_Read(&hi2c1, MLX_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, 3, 100);
+
+    if (status != HAL_OK) {
+        // Спроба ще раз з більшим таймаутом
+        status = HAL_I2C_Mem_Read(&hi2c1, MLX_ADDR, reg, I2C_MEMADD_SIZE_8BIT, data, 3, 500);
+        if (status != HAL_OK) {
+            return 0;
+        }
+    }
+
+    // data[0] - LSB, data[1] - MSB, data[2] - PEC
+    uint16_t result = (data[1] << 8) | data[0];
+
+    return result;
+}
+/* USER CODE END 4 */
+
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
