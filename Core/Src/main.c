@@ -18,10 +18,12 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "usart.h"
+#include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -31,7 +33,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define LED_PIN GPIO_PIN_14
+#define LED_PORT GPIOD
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -42,13 +45,24 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+/// UART_HandleTypeDef huart4;  - оголошено в usart.h
+
+// Bluetooth reception buffers
+char bt_rx_buffer[1];           // Single character receive buffer
+char bt_input_buffer[128];      // Complete message buffer
+uint16_t bt_input_index = 0;    // Current position in input buffer
+uint8_t bt_message_ready = 0;   // Flag indicating complete message received
+
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+void BT_Init(void);                           // Initialize Bluetooth communication
+void BT_Process(void);                        // Process received Bluetooth messages
+void BT_MessageHandler(char *message);        // Handle specific Bluetooth commands
+void BT_SendMessage(char *message);           // Send message via Bluetooth
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -62,30 +76,12 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
-
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-
+  BT_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -93,7 +89,12 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	    if (bt_message_ready!=0) {
+	    	BT_MessageHandler(bt_input_buffer);
 
+	    }
+
+	    HAL_Delay(1);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -119,7 +120,12 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLN = 144;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -129,21 +135,113 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
     Error_Handler();
   }
 }
 
 /* USER CODE BEGIN 4 */
+void BT_MessageHandler(char *message)
+{
+  // SWITCH_LED command - toggle the LED state
+  if (strcmp(message, "SWITCH_LED") == 0) {
+    // Toggle LED pin (like digitalWrite in Arduino)
+    HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
 
+    // Send response back via Bluetooth with current LED state
+    if (HAL_GPIO_ReadPin(LED_PORT, LED_PIN)) {
+      BT_SendMessage("LED ON");
+    } else {
+      BT_SendMessage("LED OFF");
+    }
+  }
+  // Unknown command handler
+  else {
+    char response[50];
+    sprintf(response, "Unknown command: %s", message);
+    BT_SendMessage(response);
+  }
+
+  bt_message_ready = 0;           // Clear the message ready flag
+  bt_input_index = 0;             // Reset buffer position
+  memset(bt_input_buffer, 0, sizeof(bt_input_buffer));  // Clear buffer contents
+
+}
 /* USER CODE END 4 */
 
+// My system code
+void BT_Init(void)
+{
+  // Start receiving data via UART interrupt
+  // When data arrives, HAL_UART_RxCpltCallback will be called automatically
+  HAL_UART_Receive_IT(&huart4, (uint8_t*)bt_rx_buffer, 1);
+
+  // Clear the input buffer to ensure it's empty
+  memset(bt_input_buffer, 0, sizeof(bt_input_buffer));
+
+  // Reset buffer position and message flag
+  bt_input_index = 0;
+  bt_message_ready = 0;
+}
+
+void BT_Process(void)
+{
+  // Check if a complete message has been received
+  if (bt_message_ready) {
+    // Process the received command
+    BT_MessageHandler(bt_input_buffer);
+
+    // Reset for next message
+    bt_message_ready = 0;           // Clear the message ready flag
+    bt_input_index = 0;             // Reset buffer position
+    memset(bt_input_buffer, 0, sizeof(bt_input_buffer));  // Clear buffer contents
+  }
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  // Check if this interrupt came from our Bluetooth UART
+  if (huart->Instance == huart4.Instance) {
+    char received_char = bt_rx_buffer[0];
+
+    // Check for end-of-line characters (like Arduino Serial.read())
+    if (received_char == '\n' || received_char == '\r') {
+      // If we have data in buffer, mark message as ready for processing
+      if (bt_input_index > 0) {
+        bt_message_ready = 1;
+      }
+    }
+    else {
+      // Add character to buffer if there's space
+      if (bt_input_index < sizeof(bt_input_buffer) - 1) {
+        bt_input_buffer[bt_input_index++] = received_char;
+      }
+      // If buffer is full, you might want to handle overflow here
+    }
+
+    // Restart interrupt-based reception for next character
+    // This is IMPORTANT - without this, you'll only receive one character!
+    HAL_UART_Receive_IT(&huart4, (uint8_t*)bt_rx_buffer, 1);
+  }
+}
+
+void BT_SendMessage(char *message)
+{
+  char buffer[128];
+
+  // Format message with line ending (like Serial.println in Arduino)
+  sprintf(buffer, "%s\r\n", message);
+
+  // Transmit message via UART5 (Bluetooth)
+  // HAL_MAX_DELAY means wait forever if needed
+  HAL_UART_Transmit(&huart4, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+}
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
