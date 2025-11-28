@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "i2c.h"
 #include "usart.h"
 #include "gpio.h"
@@ -39,6 +40,8 @@
 #define LED_PORT GPIOD
 
 #define MLX_ADDR 0x5A << 1  // I2C адреса MLX90614
+#define TEMP_MEASURE_INTERVAL 1000  // 1 секунда
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -59,7 +62,9 @@ uint8_t bt_message_ready = 0;   // Flag indicating complete message received
 
 // Pirometr
 uint32_t last_temp_measurement = 0;
-#define TEMP_MEASURE_INTERVAL 1000  // 1 секунда
+
+// Thermopair
+uint16_t adc_value = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -72,6 +77,8 @@ void BT_SendMessage(char *message);           // Send message via Bluetooth
 uint16_t MLX_Read_Register(uint8_t reg);
 float MLX_ReadTempAmbient(void);
 float MLX_ReadTempObject(void);
+
+uint16_t read_adc(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -110,7 +117,9 @@ int main(void)
   MX_GPIO_Init();
   MX_UART4_Init();
   MX_I2C1_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
+  HAL_ADC_Start(&hadc1);
   BT_Init();
   /* USER CODE END 2 */
 
@@ -214,7 +223,9 @@ void BT_MessageHandler(char *message)
   }
   else if (strcmp(message,"THERMOPAIR") == 0){
 	  char temp_msg[64];
-	  sprintf(temp_msg, "Thermopair is not ready");
+
+	  uint16_t value = read_adc();
+	  sprintf(temp_msg, "thermopair%d",value);
   	  BT_SendMessage(temp_msg);
   }
   // Unknown command handler
@@ -322,6 +333,28 @@ uint16_t MLX_Read_Register(uint8_t reg)
     uint16_t result = (data[1] << 8) | data[0];
 
     return result;
+}
+
+
+/*
+ 	 	 Thermopair
+ */
+
+uint16_t read_adc(){
+
+    // 1. Запускаємо конверсію
+    HAL_ADC_Start(&hadc1);
+
+    // 2. Чекаємо завершення конверсії
+    if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK) {
+        // 3. Отримуємо результат
+    	adc_value = HAL_ADC_GetValue(&hadc1);
+    }
+
+    // 4. Зупиняємо ADC (енергоефективність)
+    HAL_ADC_Stop(&hadc1);
+
+    return adc_value;
 }
 /* USER CODE END 4 */
 
