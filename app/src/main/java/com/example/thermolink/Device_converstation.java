@@ -1,10 +1,13 @@
 package com.example.thermolink;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,9 +21,9 @@ import org.w3c.dom.Text;
 
 public class Device_converstation extends Fragment {
     private MyBluetoothHelper bluetoothHelper;
-    private TextView isConnected_tv, messageFromDevice_tv;
+    private TextView isConnected_tv, messageFromDevice_tv, ambient_temp_tv, object_temp_tv;
     private BluetoothDevice selectedDevice;
-    private Button btn_debug, btn_turOnDiode;
+    private Button btn_pirometr_info, btn_turOnDiode;
 
     public Device_converstation() {}
 
@@ -55,10 +58,16 @@ public class Device_converstation extends Fragment {
         messageFromDevice_tv = view.findViewById(R.id.tv_receive);
         isConnected_tv = view.findViewById(R.id.tv_is_connected);
 
+        ambient_temp_tv = view.findViewById(R.id.tv_ambient_pirometer);
+        object_temp_tv = view.findViewById(R.id.tv_object_pirometer);
+
         btn_turOnDiode = view.findViewById(R.id.btn_turn_on_diode);
         btn_turOnDiode.setOnClickListener(v -> {
             bluetoothHelper.sendCommand("SWITCH_LED");
         });
+
+        btn_pirometr_info = view.findViewById(R.id.btn_pirometr_info);
+        btn_pirometr_info.setOnClickListener(v -> bluetoothHelper.sendCommand("PIROMETR"));
 
 
 
@@ -72,11 +81,28 @@ public class Device_converstation extends Fragment {
             @Override
             public void onMessageFromDevice(String s) {
                 messageFromDevice_tv.setText("Message from device: " + s);
+                messageFromDeviceHandler(s);
             }
         });
 
 
         return view;
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void messageFromDeviceHandler(String s){
+        Handler mainHandler  = new Handler(Looper.getMainLooper());
+
+        if (s.startsWith("pirometr")){
+            s = s.substring(8);
+            String[] parts = s.split("\\|");
+            final String ambientText = parts[0] + " °C";
+            final String objectText = parts[1] + " °C";
+            mainHandler.post(() -> {
+                ambient_temp_tv.setText(ambientText);
+                object_temp_tv.setText(objectText);
+            });
+        }
     }
 
 }

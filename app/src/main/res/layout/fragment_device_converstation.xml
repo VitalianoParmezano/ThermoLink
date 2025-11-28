@@ -10,35 +10,38 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+
         <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layout_debug_info"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
             android:background="@drawable/shape_rounded_item"
             android:padding="16dp"
-            app:layout_constraintTop_toTopOf="parent"
-            android:layout_margin="8dp"
-            >
+            app:layout_constraintTop_toTopOf="parent">
+
             <Button
                 android:id="@+id/btn_turn_on_diode"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="TURN ON DIODE"
                 android:backgroundTint="@color/light_gray"
-                android:textStyle="bold"
                 android:paddingVertical="10dp"
-                app:layout_constraintTop_toTopOf="parent"
+                android:text="TURN ON DIODE"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                app:layout_constraintTop_toTopOf="parent" />
+
             <TextView
                 android:id="@+id/tv_is_connected"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 android:text="Is connected:"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:layout_marginTop="16dp"
-                app:layout_constraintTop_toBottomOf="@id/btn_turn_on_diode"
-                app:layout_constraintStart_toStartOf="parent" />
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btn_turn_on_diode" />
 
             <!-- "Готово до відправки" -->
 
@@ -47,20 +50,122 @@
                 android:id="@+id/tv_receive"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Message from device:"
-                android:textSize="16sp"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="4dp"
-                app:layout_constraintTop_toBottomOf="@id/tv_is_connected"
+                android:text="Message from device:"
+                android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                app:layout_constraintTop_toBottomOf="@id/tv_is_connected" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:background="@drawable/shape_rounded_item"
+            android:padding="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_debug_info">
 
+            <TextView
+                android:id="@+id/tv_pirometer_block"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pirometer info"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
+            <Button
+                android:id="@+id/btn_pirometr_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/light_gray"
+                android:text="Get info"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_pirometer_block"
+                app:layout_constraintVertical_bias="0.6" />
 
+            <Switch
+                android:id="@+id/auto_get_pirometer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="Data auto get"
+                android:textColor="?attr/colorControlNormal"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="UseSwitchCompatOrMaterialXml" />
 
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/shape_rounded_item"
+                android:padding="12dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/btn_pirometr_info"
+                app:layout_constraintTop_toBottomOf="@id/auto_get_pirometer">
+
+                <!-- Ambient Label -->
+                <TextView
+                    android:id="@+id/tv_ambient_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ambient:"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <!-- Ambient Value -->
+                <TextView
+                    android:id="@+id/tv_ambient_pirometer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:text="-- °C"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toEndOf="@id/tv_ambient_label"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <!-- Object Label -->
+                <TextView
+                    android:id="@+id/tv_object_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Object:"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_ambient_label" />
+
+                <!-- Object Value -->
+                <TextView
+                    android:id="@+id/tv_object_pirometer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:text="-- °C"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/tv_object_label"
+                    app:layout_constraintTop_toBottomOf="@id/tv_ambient_pirometer" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
