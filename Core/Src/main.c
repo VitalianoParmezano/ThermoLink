@@ -342,16 +342,10 @@ uint16_t MLX_Read_Register(uint8_t reg)
 
 uint16_t read_adc(){
 
-    // 1. Запускаємо конверсію
     HAL_ADC_Start(&hadc1);
-
-    // 2. Чекаємо завершення конверсії
     if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK) {
-        // 3. Отримуємо результат
     	adc_value = HAL_ADC_GetValue(&hadc1);
     }
-
-    // 4. Зупиняємо ADC (енергоефективність)
     HAL_ADC_Stop(&hadc1);
 
     return adc_value;
