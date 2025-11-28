@@ -124,20 +124,7 @@ int main(void)
 
 	    	HAL_Delay(200);
 
-	        float ambient = MLX_ReadTempAmbient();
-	        float object = MLX_ReadTempObject();
 
-            int ambient_int = (int)ambient;
-            int object_int = (int)object;
-
-
-	        char temp_msg[64];
-            sprintf(temp_msg, "A: %dC, O: %dC",
-                   ambient_int,object_int);
-
-
-
-            BT_SendMessage(temp_msg);
 	    }
     /* USER CODE END WHILE */
 
@@ -209,6 +196,26 @@ void BT_MessageHandler(char *message)
     } else {
       BT_SendMessage("LED OFF");
     }
+  }
+  else if (strcmp(message, "PIROMETR") == 0) {
+	  float ambient = MLX_ReadTempAmbient();
+	  float object = MLX_ReadTempObject();
+
+	  // Конвертація у цілі числа (наприклад, помножені на 10 для 1 десяткового знака)
+	  int ambient_int = (int)(ambient * 10);
+	  int object_int = (int)(object * 10);
+
+	  char temp_msg[64];
+	  sprintf(temp_msg, "pirometr%d.%d|%d.%d",
+			  ambient_int / 10, abs(ambient_int % 10),
+			  object_int / 10, abs(object_int % 10));
+
+  	  BT_SendMessage(temp_msg);
+  }
+  else if (strcmp(message,"THERMOPAIR") == 0){
+	  char temp_msg[64];
+	  sprintf(temp_msg, "Thermopair is not ready");
+  	  BT_SendMessage(temp_msg);
   }
   // Unknown command handler
   else {
