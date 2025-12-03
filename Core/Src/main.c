@@ -125,6 +125,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  BT_SendMessage("ready");
+
   while (1)
   {
 
