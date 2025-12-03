@@ -6,6 +6,7 @@ Drivers/
 STM32F407VGTX_FLASH.ld
 STM32F407VGTX_RAM.ld
 
+
 *.swo
 *.swp
 Debug/
