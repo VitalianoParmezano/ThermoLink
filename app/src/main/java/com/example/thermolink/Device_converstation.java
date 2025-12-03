@@ -20,7 +20,7 @@ import org.w3c.dom.Text;
 
 
 public class Device_converstation extends Fragment {
-    public final static Float REFERENCE_VOLTAGE = 3.3F;
+    public final static Float REFERENCE_VOLTAGE = 2.95F;
     private MyBluetoothHelper bluetoothHelper;
     private TextView isConnected_tv, messageFromDevice_tv, ambient_temp_tv, object_temp_tv, tv_temp_thermopair, tv_voltage_thermopair, tv_raw_thermopair;
     private BluetoothDevice selectedDevice;
@@ -114,7 +114,7 @@ public class Device_converstation extends Fragment {
             s = s.substring(10);
             final String raw_text = s;
             final float voltage_thermopair = (Integer.parseInt(s) * REFERENCE_VOLTAGE) / 4096.0f;
-            final String voltageText = String.valueOf(voltage_thermopair);
+            @SuppressLint("DefaultLocale") final String voltageText = String.format("%.4f V", voltage_thermopair);
             @SuppressLint("DefaultLocale")
             final String temperature_text = String.format("%.3f °C", (voltage_thermopair - 0.0615f) * 100f);
 

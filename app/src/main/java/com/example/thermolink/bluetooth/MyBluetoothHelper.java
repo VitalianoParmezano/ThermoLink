@@ -227,11 +227,7 @@ public class MyBluetoothHelper {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Log.d(TAG, "Готово до обміну даними");
                 isReadyToSend = true;
-
-                new android.os.Handler().postDelayed(() -> {
-                    sendCommand("hello");
-                }, 1000);
-
+                
                 mainHandler.post(()-> connectionListener.onConnection());
 
             } else {
