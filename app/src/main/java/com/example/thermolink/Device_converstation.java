@@ -12,6 +12,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.example.thermolink.bluetooth.MyBluetoothHelper;
@@ -23,6 +25,7 @@ public class Device_converstation extends Fragment {
     public final static Float REFERENCE_VOLTAGE = 2.95F;
     private MyBluetoothHelper bluetoothHelper;
     private TextView isConnected_tv, messageFromDevice_tv, ambient_temp_tv, object_temp_tv, tv_temp_thermopair, tv_voltage_thermopair, tv_raw_thermopair;
+    private Switch pirometer_auto_get, thermopair_auto_get;
     private BluetoothDevice selectedDevice;
     private Button btn_pirometr_info, btn_turOnDiode, btn_thermopair_info;
 
@@ -66,6 +69,9 @@ public class Device_converstation extends Fragment {
         tv_raw_thermopair = view.findViewById(R.id.tv_raw_thermopair);
         tv_voltage_thermopair = view.findViewById(R.id.tv_voltage_thermopair);
 
+        pirometer_auto_get = view.findViewById(R.id.auto_get_pirometer);
+        thermopair_auto_get = view.findViewById(R.id.auto_get_thermopair);
+
         btn_turOnDiode = view.findViewById(R.id.btn_turn_on_diode);
         btn_turOnDiode.setOnClickListener(v -> {
             bluetoothHelper.sendCommand("SWITCH_LED");
@@ -93,6 +99,25 @@ public class Device_converstation extends Fragment {
             }
         });
 
+
+        //Auto getting
+        thermopair_auto_get.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked){
+                bluetoothHelper.setAutoSending("THERMOPAIR");
+            } else {
+                bluetoothHelper.removeAutoSending("THERMOPAIR");
+            }
+            bluetoothHelper.startAutoSending();
+        });
+
+        pirometer_auto_get.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked){
+                bluetoothHelper.setAutoSending("PIROMETR");
+            } else {
+                bluetoothHelper.removeAutoSending("PIROMETR");
+            }
+            bluetoothHelper.startAutoSending();
+        });
 
         return view;
     }

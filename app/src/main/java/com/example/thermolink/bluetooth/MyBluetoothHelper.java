@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
@@ -25,10 +26,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.Vector;
 
 public class MyBluetoothHelper {
+    private final Vector<String> autoSendList = new Vector<>();
+    private boolean isAutoSening = false;
     private final String TAG = "BluetoothHelper";
     private static MyBluetoothHelper instance;
+    private final Handler autoSendHandler = new Handler(Looper.getMainLooper());
+
 
     private BluetoothAdapter bluetoothAdapter;
     private Context context;
@@ -74,6 +80,43 @@ public class MyBluetoothHelper {
         this.searchListener = searchListener;
     }
 
+    // Receives only String witch need to be resending every second. If
+    // You need to explore that logic - need to make more difficult architecture
+    public void setAutoSending(String s){
+        if (autoSendList.contains(s)) return;
+        autoSendList.add(s);
+    }
+    public void removeAutoSending(String s){
+        if (autoSendList.contains(s)) autoSendList.remove(s);
+    }
+
+    // Auto send handler
+    public void startAutoSending() {
+        if (isAutoSening) return;
+
+        isAutoSening = true;
+        new Thread(() -> {
+            while (!autoSendList.isEmpty() && isReadyToSend) {
+                // Беремо всі команди з черги
+                List<String> commands = new ArrayList<>(autoSendList);
+
+                // Відправляємо кожну з інтервалом
+                for (String cmd : commands) {
+                    if (!isReadyToSend) break;
+
+                    sendCommand(cmd);
+
+                    try {
+                        // Розраховуємо затримку рівномірно
+                        Thread.sleep(2000 / Math.max(1, commands.size()));
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+            }
+            isAutoSening = false;
+        }).start();
+    }
     public boolean isBluetoothSupported() {
         return bluetoothAdapter != null;
     }
@@ -185,6 +228,7 @@ public class MyBluetoothHelper {
     // ----------------------------
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+        @SuppressLint("MissingPermission")
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
