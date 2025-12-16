@@ -23,3 +23,6 @@ termo_pair_project-backups/
 .cxx
 local.properties
 /app
+*.kicad_sch-bak
+
+*.plt
